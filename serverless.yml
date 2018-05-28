@@ -35,7 +35,7 @@ functions:
     events:
       - cloudwatchEvent:
           name: ${self:service}-${self:provider.stage}
-          description: 'CloudWatch Event triggered on EC2 Instance pending state'
+          description: 'GuardDuty Finding Rule to trigger processing.'
           event:
             source:
               - "aws.guardduty"

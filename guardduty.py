@@ -4,16 +4,13 @@ from requests_aws4auth import AWS4Auth
 import os
 import json
 import boto3
-import urllib
-import gzip
 
 def process(event, context):
 
     # Set Region
     region = os.environ['AWS_REGION']
 
-    # Set AWS Clients
-    s3 = boto3.client('s3', region_name=region)
+    # Set AWS Client
     es = boto3.client('es', region_name=region)
 
     # Retrieve Elasticsearch Domain Endpoint
@@ -39,48 +36,25 @@ def process(event, context):
         verify_certs=True,
         connection_class=RequestsHttpConnection
     )
-
-    # Load SNS message from event
-    message = json.loads(event['Records'][0]['Sns']['Message'])
-
-    # Retrieve bucket name and key from event
-    bucket = message['s3Bucket']
-    key = urllib.unquote_plus(message['s3ObjectKey'][0]).decode('utf8')
-
-    # Ignore Digest Events
-    if 'Digest' in key:
-        return "Cloudtrail Digest File - Not Processing"
-
-    # Download gzip file and store events
-    path = '/tmp/ctlog.gz'
-    s3.download_file(bucket, key, path)
-    gzfile = gzip.open(path, "r")
-    events = json.loads(gzfile.readlines()[0])["Records"]
-
-    # Iterate through events and push to Elasticsearch domain
-    for i in events:
-        if 'Describe' not in i["eventName"]:
-            i["@timestamp"] = i["eventTime"]
-            i["eventSource"] = i["eventSource"].split(".")[0]
-
-            ############# Add additional metadata to event #############
+    
+    event["@timestamp"] = event["time"]
+    event["eventSource"] = event["source"].split(".")[0]
+    
+    ############# Add additional metadata to event #############
             
-            # Example: Add AWS Account type
-            i["accountType"] = "Production" 
+    # Example: Add AWS Account type
+    event["accountType"] = "Production" 
 
-            ############################################################
-
-            data = json.dumps(i)
-            print(data)
+    ############################################################
+    
+    data = json.dumps(event)
+    print(data)
            
-            event_date = i["eventTime"].split("T")[0].replace("-", ".")
+    event_date = event["time"].split("T")[0].replace("-", ".")
            
-            url = 'https://' + endpoint + '/logstash-' + event_date + '/cloudtrail/'
-            index = 'logs-' + event_date
-            res = es.index(index=index, doc_type='cloudtrail', id=i['eventID'], body=data)
-            print(res)
+    url = 'https://' + endpoint + '/logstash-' + event_date + '/cloudtrail/'
+    index = 'logs-' + event_date
+    res = es.index(index=index, doc_type='guardduty', id=event['id'], body=data)
+    print(res)
 
-        else:
-            print("CloudTrail Describe Event - Not Processing")
-  
     return 'Success'
