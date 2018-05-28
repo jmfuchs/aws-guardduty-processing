@@ -1,0 +1,5 @@
+# Development Variables
+owner: <Email Address> # Tag for resources
+description: Log Processing Service
+profile: default # aws credential profile
+domain: <Elasticsearch Domain> 

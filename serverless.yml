@@ -1,0 +1,103 @@
+service: sls-aws-log-processing
+
+frameworkVersion: ">=1.5.0 < 2.0.0"
+
+provider:
+  name: aws
+  runtime: python2.7
+  stage: ${opt:stage, self:custom.defaultStage}
+  profile: ${self:custom.profile}
+  region: ${opt:region, self:custom.defaultRegion}
+  cfLogs: true
+  stackTags:
+    DEPLOYMENT_TOOL: sls
+    OWNER: ${self:custom.owner}
+    DESCRIPTION: ${self:custom.description}
+
+custom:
+  owner: ${self:custom.environment.owner}
+  description: ${self:custom.environment.description}
+  defaultStage: dev
+  defaultRegion: us-east-1
+  environment: ${file(environment/${opt:stage}.yml)}
+  profile: ${self:custom.environment.profile}
+
+functions:
+  gd-process:
+    handler: guardduty.process
+    name: ${self:service}-${self:provider.stage}-guardduty
+    description: This function ingests GuardDuty findings, adds additional metadata, and pushes them to Elasticsearch.
+    memorySize: 512
+    timeout: 300
+    role: GuardDutyProcessRole
+    environment:
+      ES_DOMAIN_NAME: "${self:custom.environment.domain}"
+    events:
+      - cloudwatchEvent:
+          name: ${self:service}-${self:provider.stage}-guardduty-finding
+          description: 'CloudWatch Event triggered on EC2 Instance pending state'
+          event:
+            source:
+              - "aws.guardduty"
+            detail-type:
+              - "GuardDuty Finding"
+resources:
+  Resources:
+    GuardDutyProcessRole:
+      Type: AWS::IAM::Role
+      Properties:
+        Path: /
+        RoleName: ${self:service}-${self:provider.stage}-guardduty
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action: sts:AssumeRole
+        Policies:
+          - PolicyName: GuardDutyProcessPolicy
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - logs:CreateLogGroup
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                  Resource: 
+                    - Fn::Join:
+                      - ":"
+                      -
+                        - "arn:aws:logs"
+                        - Ref: "AWS::Region"
+                        - Ref: "AWS::AccountId"
+                        - "log-group:/aws/lambda/*:*:*"
+                - Effect: Allow
+                  Action:
+                    - ec2:CreateNetworkInterface
+                    - ec2:DescribeNetworkInterfaces
+                    - ec2:DetachNetworkInterface
+                    - ec2:DeleteNetworkInterface
+                  Resource: "*"
+                - Effect: "Allow"
+                  Action:
+                    - "es:ESHttpPost"
+                    - "es:ESHttpGet"
+                    - "es:ESHttpPut"
+                    - "es:DescribeElasticsearchDomain"
+                  Resource: 
+                    - Fn::Join:
+                      - ":"
+                      - - "arn:aws:es"
+                        - Ref: "AWS::Region"
+                        - Ref: "AWS::AccountId"
+                        - "domain/${self:custom.environment.domain}"
+                    - Fn::Join:
+                      - ":"
+                      - - "arn:aws:es"
+                        - Ref: "AWS::Region"
+                        - Ref: "AWS::AccountId"
+                        - "domain/${self:custom.environment.domain}/*"
+  Outputs:
