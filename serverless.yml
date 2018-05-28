@@ -1,4 +1,4 @@
-service: sls-aws-log-processing
+service: sls-aws-guardduty-processing
 
 frameworkVersion: ">=1.5.0 < 2.0.0"
 
@@ -25,7 +25,7 @@ custom:
 functions:
   gd-process:
     handler: guardduty.process
-    name: ${self:service}-${self:provider.stage}-guardduty
+    name: ${self:service}-${self:provider.stage}
     description: This function ingests GuardDuty findings, adds additional metadata, and pushes them to Elasticsearch.
     memorySize: 512
     timeout: 300
@@ -34,7 +34,7 @@ functions:
       ES_DOMAIN_NAME: "${self:custom.environment.domain}"
     events:
       - cloudwatchEvent:
-          name: ${self:service}-${self:provider.stage}-guardduty-finding
+          name: ${self:service}-${self:provider.stage}
           description: 'CloudWatch Event triggered on EC2 Instance pending state'
           event:
             source:
@@ -47,7 +47,7 @@ resources:
       Type: AWS::IAM::Role
       Properties:
         Path: /
-        RoleName: ${self:service}-${self:provider.stage}-guardduty
+        RoleName: ${self:service}-${self:provider.stage}
         AssumeRolePolicyDocument:
           Version: '2012-10-17'
           Statement:
