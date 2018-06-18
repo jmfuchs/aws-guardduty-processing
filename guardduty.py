@@ -39,6 +39,7 @@ def process(event, context):
     
     event["@timestamp"] = event["time"]
     event["eventSource"] = event["source"].split(".")[0]
+    event["type"] = event["guardduty"]
     
     ############# Add additional metadata to event #############
             
@@ -54,7 +55,7 @@ def process(event, context):
            
     url = 'https://' + endpoint + '/logstash-' + event_date + '/cloudtrail/'
     index = 'logs-' + event_date
-    res = es.index(index=index, doc_type='guardduty', id=event['id'], body=data)
+    res = es.index(index=index, doc_type='aws', id=event['id'], body=data)
     print(res)
 
     return 'Success'

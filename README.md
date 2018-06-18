@@ -1,10 +1,10 @@
 # Processing Guardduty Findings with Lambda
 
-...
+This serverless application creates the necessary resources and integrations for processing [Amazon GuardDuty](https://aws.amazon.com/guardduty/) findings. The below architecture showcases how logs are post-processed, and pushed to Elasticsearch.
 
 ## Architecture
 
-...
+![Log-Architecture](images/aws-gd-processing-arch.png)
 
 ## Prerequisites
 
@@ -12,6 +12,7 @@ Below are the necessary prerequisites:
 
 *	[AWS Account](https://aws.amazon.com/premiumsupport/knowledge-center/create-and-activate-aws-account/)
 *	[Serverless Framework](https://serverless.com/)
+*	An [Amazon Elasticsearch](https://aws.amazon.com/elasticsearch-service/) cluster.  This application builds on [aws-cloudtrail-processing](https://github.com/jmfuchs/aws-cloudtrail-processing) in an effort to consolidate more AWS native log sources but can also be run independently.
 
 ### Cloud9 Environment
 
@@ -26,6 +27,22 @@ npm install -g serverless
 Clone the repo and open up **environment/dev.yml** and add in the appropiate variables. 
 
 >  You can add new files for different environments.
+
+## Enrich Logs
+
+Since the Lambda Function parses through the GuardDuty finding, you can enrich the finding by adding additional information to complement data points and add context.  This can either be static data hardcoded in the Lambda function or it can be dynamically pulled from a DynamoDB table or 3rd party threat intelligence feed. 
+
+Open **guardduty.py**, find the section of code below, and add additional metadata as necessary:
+
+```
+############# Add additional metadata to event #############
+            
+# Example: Add AWS Account type
+i["accountType"] = "Production" 
+
+############################################################
+``` 
+
 
 ## Install Dependencies
 
@@ -55,9 +72,11 @@ After to the application has been successfully deployed you can view the logs in
 
 Once you are in Kibana:
 
-* For **Index name or pattern** type **logs-\***.
-* For **Time Filter field name** select **@timestamp**.
-* Click **Create**.
+* Click **Management** in the left Navigation.
+* Click **Index Patterns**
+* For Step 1 (Define index pattern) type **logs-\***.
+* For Step 2 (Configure Settings) select **@timestamp**.
+* Click **Create Index Pattern**.
 * On the left navigation, click **Discover** to view your events.
 
 ## Cleanup
