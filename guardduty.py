@@ -39,7 +39,7 @@ def process(event, context):
     
     event["@timestamp"] = event["time"]
     event["eventSource"] = event["source"].split(".")[0]
-    event["type"] = event["guardduty"]
+    event["dataSource"] = 'guardduty'
     
     ############# Add additional metadata to event #############
             
