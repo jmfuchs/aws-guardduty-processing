@@ -69,8 +69,7 @@ resources:
                   Resource:
                     - Fn::Join:
                       - ":"
-                      -
-                        - "arn"
+                      - - "arn"
                         - Ref: "AWS::Partition"
                         - "logs"
                         - Ref: "AWS::Region"
