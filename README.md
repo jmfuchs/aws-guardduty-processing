@@ -83,9 +83,6 @@ Once you are in Kibana:
 
 Below are the steps to cleanup this application:
 
-* 	Manually delete the [S3 bucket](https://s3.console.aws.amazon.com/s3/home?region=us-west-2) you specificed in the dev.yml file.
-	
-	> You have to manually delete this bucket because there is now data in the bucket and as a protection mechanism CloudFormation will **not** delete buckets it created if data exists in that bucket.
 * 	Run the below command to delete the serverless application
 
 	```
